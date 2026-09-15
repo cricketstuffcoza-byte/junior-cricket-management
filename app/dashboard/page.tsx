@@ -1,0 +1,73 @@
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { SignOutButton } from './sign-out-button';
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const [{ data: profile }, { data: roles }, { data: schoolLinks }] = await Promise.all([
+    supabase.from('jcm_users').select('full_name,email').eq('user_id', user.id).maybeSingle(),
+    supabase.from('jcm_user_roles').select('role').eq('user_id', user.id).eq('active', true),
+    supabase.from('jcm_school_users').select('school_id,role').eq('user_id', user.id).eq('active', true),
+  ]);
+
+  const roleNames = (roles ?? []).map(r => r.role);
+  const schoolCount = schoolLinks?.length ?? 0;
+  const displayName = profile?.full_name || user.email || 'JCM User';
+
+  return (
+    <div className="shell">
+      <header className="topbar">
+        <div className="brand"><div className="brand-mark">J</div><div>Junior Cricket Management<small>JCM Platform</small></div></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}><span style={{ fontSize: 13, color: 'var(--muted)' }}>{displayName}</span><SignOutButton /></div>
+      </header>
+      <div className="layout">
+        <aside className="sidebar">
+          <div className="nav-label">Platform</div>
+          <a className="nav-item active" href="/dashboard">Dashboard</a>
+          <a className="nav-item" href="#schools">Schools</a>
+          <a className="nav-item" href="#seasons">Seasons</a>
+          <a className="nav-item" href="#teams">Teams</a>
+          <a className="nav-item" href="#players">Players</a>
+          <div className="nav-label" style={{ marginTop: 14 }}>Cricket</div>
+          <a className="nav-item" href="#competitions">Competitions</a>
+          <a className="nav-item" href="#fixtures">Fixtures</a>
+          <a className="nav-item" href="#matches">Matches</a>
+          <a className="nav-item" href="#scoring">Live Scoring</a>
+          <div className="nav-label" style={{ marginTop: 14 }}>System</div>
+          <a className="nav-item" href="#users">Users & Roles</a>
+          <a className="nav-item" href="#audit">Audit Log</a>
+        </aside>
+        <main className="main">
+          <div className="banner"><h2>JCM application foundation</h2><p>The new multi-school platform is connected to the JCM data architecture. Legacy production data remains separate and untouched.</p></div>
+          <div className="eyebrow">Operations dashboard</div>
+          <h1>Good day, {displayName.split(' ')[0]}</h1>
+          <p className="subtitle">Your role-aware JCM workspace is ready for the next build phase.</p>
+
+          <div className="grid">
+            <div className="card"><div className="stat-label">Active roles</div><div className="stat">{roleNames.length}</div><span className="pill">{roleNames.length ? roleNames.join(' · ') : 'Not assigned'}</span></div>
+            <div className="card"><div className="stat-label">School access</div><div className="stat">{schoolCount}</div><span className="pill">{schoolCount ? 'Linked' : 'Pending setup'}</span></div>
+            <div className="card"><div className="stat-label">Scoring engine</div><div className="stat">3</div><span className="pill">O/6 · O/7 · O/8</span></div>
+            <div className="card"><div className="stat-label">System status</div><div className="stat">Ready</div><span className="pill">Core online</span></div>
+          </div>
+
+          <div className="section card">
+            <div className="section-title">Build status</div>
+            <div style={{ display: 'grid', gap: 11, fontSize: 14 }}>
+              <div>✓ Supabase JCM database architecture</div>
+              <div>✓ Authentication and session foundation</div>
+              <div>✓ Role-aware application shell</div>
+              <div>✓ O/6, O/7 and O/8 ruleset foundation</div>
+              <div>→ System Admin Portal and school setup</div>
+              <div>→ Universal scoring engine and live match state</div>
+            </div>
+          </div>
+
+          {!roleNames.length && <div className="section notice"><strong>Account setup required:</strong> this authenticated account does not yet have an active JCM role. The System Owner setup will be added next.</div>}
+        </main>
+      </div>
+    </div>
+  );
+}
