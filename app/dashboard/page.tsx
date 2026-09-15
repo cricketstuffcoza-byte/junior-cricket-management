@@ -16,6 +16,7 @@ export default async function DashboardPage() {
   const roleNames = (roles ?? []).map(r => r.role);
   const schoolCount = schoolLinks?.length ?? 0;
   const displayName = profile?.full_name || user.email || 'JCM User';
+  const isSystemAdmin = roleNames.includes('SYSTEM_ADMIN');
 
   return (
     <div className="shell">
@@ -27,6 +28,7 @@ export default async function DashboardPage() {
         <aside className="sidebar">
           <div className="nav-label">Platform</div>
           <a className="nav-item active" href="/dashboard">Dashboard</a>
+          {isSystemAdmin && <a className="nav-item" href="/admin">System Admin</a>}
           <a className="nav-item" href="#schools">Schools</a>
           <a className="nav-item" href="#seasons">Seasons</a>
           <a className="nav-item" href="#teams">Teams</a>
@@ -60,12 +62,15 @@ export default async function DashboardPage() {
               <div>✓ Authentication and session foundation</div>
               <div>✓ Role-aware application shell</div>
               <div>✓ O/6, O/7 and O/8 ruleset foundation</div>
-              <div>→ System Admin Portal and school setup</div>
+              <div>✓ One-time System Admin bootstrap</div>
+              <div>✓ School, season and team administration</div>
+              <div>→ Player, parent and staff management</div>
+              <div>→ Fixtures, availability and squad selection</div>
               <div>→ Universal scoring engine and live match state</div>
             </div>
           </div>
 
-          {!roleNames.length && <div className="section notice"><strong>Account setup required:</strong> this authenticated account does not yet have an active JCM role. The System Owner setup will be added next.</div>}
+          {!roleNames.length && <div className="section notice"><strong>Account setup required:</strong> this authenticated account does not yet have an active JCM role. Open <a href="/admin" style={{ color: 'var(--sky-dark)', fontWeight: 800 }}>System Admin</a> to perform the one-time setup.</div>}
         </main>
       </div>
     </div>
