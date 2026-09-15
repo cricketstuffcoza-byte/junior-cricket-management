@@ -1,0 +1,23 @@
+import {redirect} from 'next/navigation';
+import {createClient} from '@/lib/supabase/server';
+import {SignOutButton} from '../../dashboard/sign-out-button';
+import {ScoringClient} from './scoring-client';
+
+export default async function ScoringPage({params}:{params:Promise<{id:string}>}){
+  const supabase=await createClient();
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user) redirect('/login');
+  const id=(await params).id;
+  const [{data:match},{data:state},{data:innings},{data:matchPlayers},{data:events},{data:stats},{data:teams}]=await Promise.all([
+    supabase.from('jcm_matches').select('id,team_a_id,team_b_id,age_group,ruleset,status,toss_winner_team_id,toss_decision,scheduled_at,result_winner_team_id,result_reason,result_margin').eq('id',id).single(),
+    supabase.from('jcm_match_state').select('*').eq('match_id',id).single(),
+    supabase.from('jcm_innings').select('*').eq('match_id',id).order('innings_no'),
+    supabase.from('jcm_match_players').select('player_id,team_id,selected,batting_order,jcm_players(id,first_name,surname)').eq('match_id',id).eq('selected',true),
+    supabase.from('jcm_scoring_events').select('id,sequence_number,event_type,runs,extras,dismissal_type,created_at').eq('match_id',id).order('sequence_number',{ascending:false}).limit(30),
+    supabase.from('jcm_player_match_stats').select('*').eq('match_id',id),
+    supabase.from('jcm_teams').select('id,name,school_id').in('id',match? [match.team_a_id,match.team_b_id]:[])
+  ]);
+  if(!match||!state) redirect('/operations');
+  const players=(matchPlayers??[]).map((p:any)=>({id:p.player_id,team_id:p.team_id,batting_order:p.batting_order,name:p.jcm_players?`${p.jcm_players.first_name} ${p.jcm_players.surname}`:'Player'}));
+  return <div className="shell"><header className="topbar"><div className="brand"><div className="brand-mark">J</div><div>Junior Cricket Management<small>Universal Live Scoring</small></div></div><div style={{display:'flex',alignItems:'center',gap:14}}><span className="pill">{match.ruleset}</span><span style={{fontSize:13,color:'var(--muted)'}}>{user.email}</span><SignOutButton/></div></header><main className="main"><a href={`/operations/matches/${id}`} style={{color:'var(--sky-dark)',fontWeight:800,fontSize:13}}>← Match preparation</a><div className="banner" style={{marginTop:18}}><h2>{teams?.find(t=>t.id===match.team_a_id)?.name} vs {teams?.find(t=>t.id===match.team_b_id)?.name}</h2><p>{match.age_group} · {match.ruleset} · {match.status}</p></div><ScoringClient match={match} initialState={state} initialInnings={innings??[]} players={players} initialEvents={events??[]} initialStats={stats??[]}/></main></div>
+}
