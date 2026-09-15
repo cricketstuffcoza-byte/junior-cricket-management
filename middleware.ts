@@ -21,15 +21,14 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
+  const protectedPath = path.startsWith('/dashboard') || path.startsWith('/school') || path.startsWith('/operations') || path.startsWith('/parent');
 
-  if (!user && path.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-  if (user && path === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  if (!user && protectedPath) return NextResponse.redirect(new URL('/login', request.url));
+  if (user && path === '/login') return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (user && user.user_metadata?.force_password_change === true && protectedPath) return NextResponse.redirect(new URL('/change-password', request.url));
+  if (user && user.user_metadata?.force_password_change === true && path === '/change-password') return response;
 
   return response;
 }
 
-export const config = { matcher: ['/dashboard/:path*', '/login'] };
+export const config = { matcher: ['/dashboard/:path*', '/school/:path*', '/operations/:path*', '/parent/:path*', '/login', '/change-password'] };
