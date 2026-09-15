@@ -10,14 +10,28 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [{ data: profile }, { data: roles }, { data: schoolLinks }] = await Promise.all([
+  // Keep the dashboard independent of the school-access RPC. System Admin users
+  // do not need school links to reach the dashboard, and a failed optional
+  // school-access lookup must never take down the whole authenticated portal.
+  const [{ data: profile }, { data: roles }] = await Promise.all([
     supabase.from('jcm_users').select('full_name,email').eq('user_id', user.id).maybeSingle(),
     supabase.from('jcm_user_roles').select('role').eq('user_id', user.id).eq('active', true),
-    supabase.rpc('jcm_my_school_access'),
   ]);
 
+  let schoolLinks: JcmSchoolLink[] = [];
+  try {
+    const { data } = await supabase
+      .from('jcm_school_users')
+      .select('school_id,role')
+      .eq('user_id', user.id)
+      .eq('active', true);
+    schoolLinks = (data ?? []) as JcmSchoolLink[];
+  } catch {
+    // School access is optional on the dashboard. Keep the authenticated portal usable.
+  }
+
   const roleNames = ((roles ?? []) as JcmRoleRow[]).map((r: JcmRoleRow) => r.role);
-  const links = (schoolLinks ?? []) as JcmSchoolLink[];
+  const links = schoolLinks;
   const schoolCount = links.length;
   const displayName = profile?.full_name || user.email || 'JCM User';
   const isSystemAdmin = roleNames.includes('SYSTEM_ADMIN');
