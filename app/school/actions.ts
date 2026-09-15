@@ -17,6 +17,18 @@ export async function linkSchoolUser(formData: FormData) {
   return { ok:true, message:`${email} was linked to this school as ${role.replace('_',' ')}.` };
 }
 
+export async function addRolesToExistingSchoolUser(formData: FormData) {
+  const supabase = await createClient();
+  const schoolId = String(formData.get('school_id') ?? '');
+  const email = String(formData.get('email') ?? '').trim();
+  const roles = formData.getAll('roles').map(String).filter(Boolean);
+  if (!schoolId || !email || roles.length === 0) return { ok:false, message:'Email and at least one role are required.' };
+  const { error } = await supabase.rpc('jcm_school_admin_add_roles_to_existing_user', { p_school_id: schoolId, p_email: email, p_roles: roles });
+  if (error) return { ok:false, message:error.message };
+  revalidatePath('/school');
+  return { ok:true, message:`${email} was updated with ${roles.length} school role${roles.length===1?'':'s'}.` };
+}
+
 export async function removeSchoolUser(schoolId: string, userId: string, role: string) {
   const supabase = await createClient();
   if (!['SCHOOL_STAFF','COACH','SCORER','PARENT'].includes(role)) return { ok:false, message:'This role cannot be removed here.' };
