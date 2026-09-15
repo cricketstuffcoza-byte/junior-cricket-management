@@ -16,8 +16,11 @@ export default function ChangePasswordPage() {
     if (password !== confirm) { setError('Passwords do not match.'); return; }
     setLoading(true);
     const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ password, data: { force_password_change: false } });
+    const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) { setError(updateError.message); setLoading(false); return; }
+    const { data, error: completeError } = await supabase.functions.invoke('jcm-complete-password-change');
+    if (completeError || data?.error) { setError(completeError?.message || data?.error || 'Password was changed, but the account could not be finalized. Please sign in again.'); setLoading(false); return; }
+    await supabase.auth.refreshSession();
     window.location.href = '/dashboard';
   }
 
