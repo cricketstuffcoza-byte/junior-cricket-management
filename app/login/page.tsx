@@ -20,7 +20,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    if (data.user?.user_metadata?.force_password_change === true) {
+    if (data.user?.app_metadata?.force_password_change === true) {
       window.location.href = '/change-password';
       return;
     }
