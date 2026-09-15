@@ -25,8 +25,8 @@ export async function middleware(request: NextRequest) {
 
   if (!user && protectedPath) return NextResponse.redirect(new URL('/login', request.url));
   if (user && path === '/login') return NextResponse.redirect(new URL('/dashboard', request.url));
-  if (user && user.user_metadata?.force_password_change === true && protectedPath) return NextResponse.redirect(new URL('/change-password', request.url));
-  if (user && user.user_metadata?.force_password_change === true && path === '/change-password') return response;
+  if (user && user.app_metadata?.force_password_change === true && protectedPath) return NextResponse.redirect(new URL('/change-password', request.url));
+  if (user && user.app_metadata?.force_password_change === true && path === '/change-password') return response;
 
   return response;
 }
