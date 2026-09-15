@@ -21,14 +21,15 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
-  const isPublic = path === '/' || path.startsWith('/login') || path.startsWith('/auth');
 
-  if (!user && !isPublic) return NextResponse.redirect(new URL('/login', request.url));
-  if (user && path === '/login') return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (!user && path.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  if (user && path === '/login') {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
 
   return response;
 }
 
-export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
-};
+export const config = { matcher: ['/dashboard/:path*', '/login'] };
