@@ -1,13 +1,13 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState, useTransition, type ReactNode } from 'react';
 import { bootstrapSystemAdmin, createSchool, createSeason, createTeam } from './actions';
 
 type School = { id: string; name: string; short_name: string | null; code: string; active: boolean };
 type Season = { id: string; school_id: string; name: string; year: number; status: string };
 type Team = { id: string; school_id: string; season_id: string; name: string; code: string | null; age_group: string; status: string };
 
-function ActionForm({ action, children }: { action: (formData: FormData) => Promise<{ ok: boolean; message: string }>; children: React.ReactNode }) {
+function ActionForm({ action, children }: { action: (formData: FormData) => Promise<{ ok: boolean; message: string }>; children: ReactNode }) {
   const [pending, start] = useTransition();
   const [message, setMessage] = useState('');
   const ref = useRef<HTMLFormElement>(null);
