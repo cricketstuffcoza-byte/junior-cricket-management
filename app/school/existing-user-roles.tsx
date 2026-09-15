@@ -3,7 +3,7 @@
 import {useState,useTransition,type FormEvent} from 'react';
 import {addRolesToExistingSchoolUser} from './actions';
 
-const ROLE_OPTIONS=[['SCHOOL_ADMIN','School Admin'],['SCHOOL_STAFF','School Staff'],['COACH','Coach'],['SCORER','Scorer'],['PARENT','Parent']] as const;
+const ROLE_OPTIONS=[['SCHOOL_ADMIN','School Admin'],['SCHOOL_STAFF','Users'],['COACH','Coach'],['SCORER','Scorer'],['PARENT','Parent']] as const;
 
 export function ExistingUserRoleManager({schoolId}:{schoolId:string}){
  const[email,setEmail]=useState('');
@@ -15,7 +15,7 @@ export function ExistingUserRoleManager({schoolId}:{schoolId:string}){
  const submit=(event:FormEvent)=>{
   event.preventDefault();setMessage('');setError(false);
   const form=new FormData();form.set('school_id',schoolId);form.set('email',email.trim());roles.forEach(role=>form.append('roles',role));
-  start(async()=>{try{const result=await addRolesToExistingSchoolUser(form);setMessage(result.message);setError(!result.ok);if(result.ok){setEmail('');setRoles([])}}catch(err){setError(true);setMessage(err instanceof Error?err.message:'Unable to update school roles.')}});
+  start(async()=>{try{const result=await addRolesToExistingSchoolUser(form);setMessage(result.message);setError(!result.ok);if(result.ok){setEmail('');setRoles([])}}catch(err){setError(true);setMessage(err instanceof Error?err.message:'Unable to update user roles.')}});
  };
  return <section className="card" id="existing-user-roles">
   <div className="section-title">Add roles to an existing user</div>
