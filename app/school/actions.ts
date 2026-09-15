@@ -19,7 +19,7 @@ export async function linkSchoolUser(formData: FormData) {
 
 export async function removeSchoolUser(schoolId: string, userId: string, role: string) {
   const supabase = await createClient();
-  if (!['COACH','SCORER','PARENT'].includes(role)) return { ok:false, message:'This role cannot be removed here.' };
+  if (!['SCHOOL_STAFF','COACH','SCORER','PARENT'].includes(role)) return { ok:false, message:'This role cannot be removed here.' };
   const { error } = await supabase.from('jcm_school_users').update({ active:false }).eq('school_id',schoolId).eq('user_id',userId).eq('role',role);
   if (error) return { ok:false, message:error.message };
   revalidatePath('/school');
