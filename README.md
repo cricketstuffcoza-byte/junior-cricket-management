@@ -27,4 +27,4 @@ npm run dev
 
 Foundation phase: application shell, authentication flow and role-aware portal routing.
 
-<!-- Cloudflare deployment trigger: 2026-09-15 -->
+<!-- Cloudflare deployment trigger: 2026-09-18-toss-live-fix -->
