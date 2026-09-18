@@ -77,3 +77,23 @@ begin
   );
   execute fn;
 end $outer$;
+
+do $outer$
+declare fn text;
+begin
+  select pg_get_functiondef('public.jcm_process_scoring_event(uuid,text,jsonb,uuid)'::regprocedure) into fn;
+  fn:=replace(fn,
+    $old$      v_unplayable := coalesce((p_payload->>'unplayable')::boolean,false);
+      v_runs := greatest(coalesce((p_payload->>'runs')::integer,0),0);
+      if st.workflow_state->>'coach_throw_pending' <> 'true' then raise exception 'A Coach Throw can only be recorded after a wide or no-ball.'; end if;
+      if upper(coalesce(p_payload->>'base_extra','')) <> st.workflow_state->>'coach_throw_base' then raise exception 'Coach Throw does not match the pending extra.'; end if;
+      if not v_unplayable then raise exception 'Coach Throw must be marked as unplayable.'; end if;
+      if v_runs > 6 then raise exception 'Coach Throw may record 0 to 6 runs.'; end if;$old$,
+    $new$      v_unplayable := false;
+      v_runs := greatest(coalesce((p_payload->>'runs')::integer,0),0);
+      if st.workflow_state->>'coach_throw_pending' <> 'true' then raise exception 'A Coach Throw can only be recorded after a wide or no-ball.'; end if;
+      if upper(coalesce(p_payload->>'base_extra','')) <> st.workflow_state->>'coach_throw_base' then raise exception 'Coach Throw does not match the pending extra.'; end if;
+      if v_runs > 6 then raise exception 'Coach Throw may record 0 to 6 runs.'; end if;$new$
+  );
+  execute fn;
+end $outer$;
