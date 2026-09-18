@@ -16,6 +16,8 @@ export default async function OperationsPage() {
   const { data:roles } = await supabase.from('jcm_user_roles').select('role').eq('user_id',user.id).eq('active',true);
   const isAdmin = (roles ?? []).some(r=>r.role==='SYSTEM_ADMIN');
   const { data:links } = await supabase.from('jcm_school_users').select('school_id,role').eq('user_id',user.id).eq('active',true);
+  const isSchoolAdmin = (links ?? []).some(x=>x.role==='SCHOOL_ADMIN');
+  const schoolIds = [...new Set((links ?? []).map(x=>x.school_id))];
   if (!isAdmin && !(links ?? []).some(x=>['SCHOOL_ADMIN','COACH'].includes(x.role))) redirect('/dashboard');
 
   const [{data:schools},{data:seasons},{data:teams},{data:competitions},{data:venues},{data:fixtures},{data:matches},{data:innings}] = await Promise.all([
@@ -29,8 +31,14 @@ export default async function OperationsPage() {
     supabase.from('jcm_innings').select('match_id,innings_no,batting_team_id,runs,wickets,legal_balls,completed').order('innings_no')
   ]);
 
-  const matchRows=(matches??[]) as MatchRow[];
-  const fixtureRows=(fixtures??[]) as FixtureRow[];
+  const visibleTeamIds = new Set((teams ?? []).filter(t=>isAdmin||schoolIds.includes(t.school_id)).map(t=>t.id));
+  const visibleTeams = (teams ?? []).filter(t=>isAdmin||schoolIds.includes(t.school_id));
+  const visibleSeasons = (seasons ?? []).filter(s=>isAdmin||schoolIds.includes(s.school_id));
+  const visibleVenues = (venues ?? []).filter(v=>isAdmin||v.school_id===null||schoolIds.includes(v.school_id));
+  const visibleFixtures = (fixtures ?? []).filter(f=>isAdmin||visibleTeamIds.has(f.home_team_id)||visibleTeamIds.has(f.away_team_id));
+  const visibleMatches = (matches ?? []).filter(m=>isAdmin||visibleTeamIds.has(m.team_a_id)||visibleTeamIds.has(m.team_b_id));
+  const matchRows=(visibleMatches??[]) as MatchRow[];
+  const fixtureRows=(visibleFixtures??[]) as FixtureRow[];
   const inningsRows=(innings??[]) as InningsRow[];
   const teamName=(id:string|null)=>id ? teams?.find(t=>t.id===id)?.name ?? 'Unknown team' : 'Unknown team';
   const competitionName=(id:string|null)=>competitions?.find(c=>c.id===id)?.name ?? null;
@@ -59,7 +67,7 @@ export default async function OperationsPage() {
     <header className="topbar"><div className="brand"><div className="brand-mark">J</div><div>Junior Cricket Management<small>Cricket Operations</small></div></div><div style={{display:'flex',alignItems:'center',gap:14}}><span className="pill">{isAdmin?'SYSTEM ADMIN':'SCHOOL OPERATIONS'}</span><span style={{fontSize:13,color:'var(--muted)'}}>{user.email}</span><SignOutButton/></div></header>
     <div className="layout"><aside className="sidebar"><div className="nav-label">Operations</div><a className="nav-item active" href="/operations">Competitions & Fixtures</a><a className="nav-item" href="/dashboard">Dashboard</a><div className="nav-label" style={{marginTop:14}}>Match flow</div><a className="nav-item" href="#matches">Matches</a><a className="nav-item" href="#matches">Live Scoring</a></aside>
       <main className="main"><div className="banner"><h2>Cricket Operations</h2><p>Build the fixture pipeline from competition and schedule through availability and squad selection.</p></div><div className="eyebrow">Competition & fixture management</div><h1>Schedule the cricket</h1><p className="subtitle">Competitions, fixtures and the availability workflow now share one JCM operational layer.</p>
-        <OperationsClient schools={schools??[]} seasons={seasons??[]} teams={teams??[]} competitions={competitions??[]} venues={venues??[]} fixtures={fixtures??[]}/>
+        <OperationsClient schools={schools??[]} seasons={visibleSeasons} teams={visibleTeams} competitions={competitions??[]} venues={visibleVenues} fixtures={visibleFixtures} isSystemAdmin={isAdmin} isSchoolAdmin={isSchoolAdmin} schoolIds={schoolIds}/>
         <section id="matches" className="card section"><div className="section-title">Matches <span className="count">{matchRows.length}</span></div>
           {matchRows.length===0 ? <div className="empty">No matches prepared yet.</div> : <div className="table-wrap"><table><thead><tr><th>Match</th><th>Age</th><th>Ruleset</th><th>Status</th><th>Score</th><th>Scheduled</th><th/></tr></thead><tbody>
             {matchRows.map(m=>{
