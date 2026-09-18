@@ -33,7 +33,8 @@ export default async function OperationsPage() {
   const { data:matches,error:matchesError } = await supabase.rpc('jcm_operations_match_feed');
   if (matchesError) throw new Error(matchesError.message);
 
-  const assignedUserIds = [...new Set((matches ?? []).map(m=>m.scorer_user_id).filter(Boolean))] as string[];
+  const rawMatches = (matches ?? []) as MatchRow[];
+  const assignedUserIds = [...new Set(rawMatches.map(m=>m.scorer_user_id).filter(Boolean))] as string[];
   const { data:assignedUsers } = assignedUserIds.length
     ? await supabase.from('jcm_users').select('user_id,full_name,email').in('user_id',assignedUserIds)
     : { data: [] };
@@ -43,7 +44,7 @@ export default async function OperationsPage() {
   const visibleSeasons = (seasons ?? []).filter(s=>isAdmin||schoolIds.includes(s.school_id));
   const visibleVenues = (venues ?? []).filter(v=>isAdmin||v.school_id===null||schoolIds.includes(v.school_id));
   const visibleFixtures = (fixtures ?? []).filter(f=>isAdmin||visibleTeamIds.has(f.home_team_id)||visibleTeamIds.has(f.away_team_id));
-  const matchRows=(matches??[]) as MatchRow[];
+  const matchRows=rawMatches;
   const fixtureRows=(visibleFixtures??[]) as FixtureRow[];
   const inningsRows=(innings??[]) as InningsRow[];
   const teamName=(id:string|null)=>id ? teams?.find(t=>t.id===id)?.name ?? 'Unknown team' : 'Unknown team';
