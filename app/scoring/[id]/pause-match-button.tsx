@@ -1,0 +1,4 @@
+'use client';
+import {useState,useTransition} from 'react';
+import {pauseMatch} from '../../operations/matches/actions';
+export function PauseMatchButton({matchId}:{matchId:string}){const[pending,start]=useTransition();const[msg,setMsg]=useState('');return <section className="card section"><div className="section-title">Save & pause</div><p className="form-help">Save the match exactly where it is and close the scoring session. All scores, events, statistics, strike, bowler, over and workflow state are already stored in Supabase and can be accessed by another authorized scorer or coach.</p><button className="secondary-button big" disabled={pending} onClick={()=>start(async()=>{const fd=new FormData();fd.set('match_id',matchId);const r=await pauseMatch(fd);setMsg(r.message)})}>{pending?'Saving…':'Save match & pause'}</button>{msg&&<div className="success" style={{marginTop:12}}>{msg}</div>}</section>}
