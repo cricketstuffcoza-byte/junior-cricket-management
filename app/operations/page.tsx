@@ -33,7 +33,11 @@ export default async function OperationsPage() {
   const { data:matches,error:matchesError } = await supabase.rpc('jcm_operations_match_feed');
   if (matchesError) throw new Error(matchesError.message);
 
-  const rawMatches = (matches ?? []) as MatchRow[];
+  const rawMatches: MatchRow[] = (matches ?? []).map((row) => ({
+    ...row,
+    team_a_name: row.team_a_name ?? 'Unknown team',
+    team_b_name: row.team_b_name ?? 'Unknown team',
+  })) as MatchRow[];
   const assignedUserIds = [...new Set(rawMatches.map(m=>m.scorer_user_id).filter(Boolean))] as string[];
   const { data:assignedUsers } = assignedUserIds.length
     ? await supabase.from('jcm_users').select('user_id,full_name,email').in('user_id',assignedUserIds)
