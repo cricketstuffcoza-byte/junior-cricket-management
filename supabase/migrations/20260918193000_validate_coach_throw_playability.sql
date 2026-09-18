@@ -51,3 +51,19 @@ begin
     execute fn;
   end if;
 end $outer$;
+
+do $outer$
+declare fn text;
+begin
+  select pg_get_functiondef('public.jcm_rebuild_batting_pair_balls(uuid)'::regprocedure) into fn;
+  fn:=replace(fn,
+    '  set pair_balls=coalesce((',
+    '  set pair_balls=coalesce(('
+  );
+  -- Safe-update requires a scoped WHERE clause.
+  fn:=replace(fn,
+    '  ),0);',
+    '  ),0) where bp.innings_id in (select id from public.jcm_innings where match_id=p_match_id);'
+  );
+  execute fn;
+end $outer$;
