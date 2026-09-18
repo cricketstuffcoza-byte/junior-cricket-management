@@ -18,6 +18,7 @@ export default async function CoachPortalPage(){
   if(!isAdmin&&!schoolIds.length) redirect('/dashboard');
 
   const {data:matches,error}=await supabase.rpc('jcm_coach_match_feed');
+  type CoachMatch = NonNullable<typeof matches>[number];
   if(error) throw new Error(error.message);
 
   return <div className="shell">
@@ -33,7 +34,7 @@ export default async function CoachPortalPage(){
         <section className="card section">
           <div className="section-title">Matches <span className="count">{matches?.length??0}</span></div>
           {!matches?.length?<div className="empty">No matches available.</div>:<div className="table-wrap"><table><thead><tr><th>Match</th><th>Age</th><th>Status</th><th>Scheduled</th><th>Venue</th><th/></tr></thead><tbody>
-            {matches.map(m=>{const ready=Boolean(m.toss_winner_team_id&&m.toss_decision);return <tr key={m.id}>
+            {matches.map((m:CoachMatch)=>{const ready=Boolean(m.toss_winner_team_id&&m.toss_decision);return <tr key={m.id}>
               <td><strong>{m.team_a_name} vs {m.team_b_name}</strong><small>{m.competition_name??'Competition not specified'}</small></td>
               <td>{m.age_group}</td><td><span className="status">{m.status}</span></td>
               <td>{m.scheduled_at?new Date(m.scheduled_at).toLocaleString('en-ZA'):'—'}</td>
