@@ -115,11 +115,16 @@ begin
 
       if e.bowler_id is not null then
         update public.jcm_player_match_stats
-        set balls=balls+case when v_legal and v_delivery then 1 else 0 end,
+        set balls=balls+case
+              when e.event_type='COACH_THROW' then 0
+              when e.event_type='RUN_OUT' then case when v_delivery then 1 else 0 end
+              else 1
+            end,
             runs=runs+case when e.event_type='COACH_THROW' then 0 else v_runs end,
             wides=wides+case when e.event_type='WIDE' then 1 else 0 end,
             no_balls=no_balls+case when e.event_type='NO_BALL' then 1 else 0 end,
-            unplayable_balls=unplayable_balls+case when e.event_type in ('WIDE','NO_BALL') then 1 else 0 end
+            unplayable_balls=unplayable_balls+case when e.event_type in ('WIDE','NO_BALL') then 1 else 0 end,
+            wickets=wickets+case when upper(coalesce(e.dismissal_type,'')) in ('BOWLED','CAUGHT','HIT_WICKET') then 1 else 0 end
         where match_id=p_match_id and innings_no=v_innings_no and player_id=e.bowler_id;
       end if;
 
