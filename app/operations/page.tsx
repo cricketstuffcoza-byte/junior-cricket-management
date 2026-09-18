@@ -63,15 +63,16 @@ export default async function OperationsPage() {
   };
   const scoreForMatch=(m:MatchRow)=>{
     const rows=inningsRows.filter(i=>i.match_id===m.id).sort((a,b)=>a.innings_no-b.innings_no);
+    if(!rows.length) return null;
+    const scores=rows.map(i=>teamName(i.batting_team_id)+' '+scoreText(i));
     if(m.status==='LIVE'||m.status==='PAUSED'){
       const current=[...rows].reverse().find(i=>!i.completed) ?? rows[rows.length-1];
-      return current?.batting_team_id ? 'Current: '+teamName(current.batting_team_id)+' '+scoreText(current) : 'Current score: 0/0';
+      const previous=rows.filter(i=>i.id!==current.id);
+      const currentText=current?.batting_team_id ? 'Current: '+teamName(current.batting_team_id)+' '+scoreText(current) : 'Current score: 0/0';
+      return previous.length ? previous.map(i=>teamName(i.batting_team_id)+' '+scoreText(i)).join(' · ')+' · '+currentText : currentText;
     }
-    if(m.status==='COMPLETED'||m.status==='FINALISED'){
-      if(!rows.length) return 'Final score not available';
-      return rows.map(i=>teamName(i.batting_team_id)+' '+scoreText(i)).join(' · ');
-    }
-    return null;
+    if(m.status==='COMPLETED'||m.status==='FINALISED') return scores.join(' · ');
+    return scores.join(' · ');
   };
 
   return <div className="shell">
