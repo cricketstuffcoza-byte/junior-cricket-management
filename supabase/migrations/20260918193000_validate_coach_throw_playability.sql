@@ -67,3 +67,13 @@ begin
   );
   execute fn;
 end $outer$;
+do $outer$
+declare fn text;
+begin
+  select pg_get_functiondef('public.jcm_process_scoring_event_core(uuid,text,jsonb,uuid)'::regprocedure) into fn;
+  fn:=replace(fn,
+    $old$'unplayable',coalesce((p_payload->>'unplayable')::boolean,true)$old$,
+    $new$'unplayable',coalesce((p_payload->>'unplayable')::boolean,false)$new$
+  );
+  execute fn;
+end $outer$;
