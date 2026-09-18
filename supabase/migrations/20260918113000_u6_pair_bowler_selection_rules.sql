@@ -1,2 +1,0 @@
--- U6 pair/bowler selection rules are applied in the scoring wrapper.
--- This migration is intentionally documented alongside the live database change.
