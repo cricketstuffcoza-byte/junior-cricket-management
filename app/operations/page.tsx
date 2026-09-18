@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 type MatchRow = { id:string; fixture_id:string|null; team_a_id:string; team_a_name:string; team_b_id:string; team_b_name:string; age_group:string; ruleset:string; venue_id:string|null; competition_id:string|null; status:string; scheduled_at:string|null; toss_winner_team_id:string|null; toss_decision:string|null; result_winner_team_id:string|null; result_reason:string|null; result_margin:string|null; scorer_user_id:string|null; fixture_competition_id:string|null; fixture_venue_id:string|null; fixture_notes:string|null };
 type FixtureRow = { id:string; competition_id:string|null; venue_id:string|null; notes:string|null };
-type InningsRow = { match_id:string; innings_no:number; batting_team_id:string|null; runs:number; wickets:number; legal_balls:number; completed:boolean };
+type InningsRow = { id:string; match_id:string; innings_no:number; batting_team_id:string|null; runs:number; wickets:number; legal_balls:number; completed:boolean };
 
 export default async function OperationsPage() {
   const supabase = await createClient();
