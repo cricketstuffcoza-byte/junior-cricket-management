@@ -5,7 +5,7 @@ import { OperationsClient } from './operations-client';
 
 export const dynamic = 'force-dynamic';
 
-type MatchRow = { id:string; fixture_id:string|null; team_a_id:string; team_b_id:string; age_group:string; ruleset:string; venue_id:string|null; competition_id:string|null; status:string; scheduled_at:string|null; toss_winner_team_id:string|null; toss_decision:string|null; result_winner_team_id:string|null; result_reason:string|null; result_margin:number|null; scorer_user_id:string|null };
+type MatchRow = { id:string; fixture_id:string|null; team_a_id:string; team_a_name:string; team_b_id:string; team_b_name:string; age_group:string; ruleset:string; venue_id:string|null; competition_id:string|null; status:string; scheduled_at:string|null; toss_winner_team_id:string|null; toss_decision:string|null; result_winner_team_id:string|null; result_reason:string|null; result_margin:string|null; scorer_user_id:string|null; fixture_competition_id:string|null; fixture_venue_id:string|null; fixture_notes:string|null };
 type FixtureRow = { id:string; competition_id:string|null; venue_id:string|null; notes:string|null };
 type InningsRow = { match_id:string; innings_no:number; batting_team_id:string|null; runs:number; wickets:number; legal_balls:number; completed:boolean };
 
@@ -20,16 +20,18 @@ export default async function OperationsPage() {
   const schoolIds = [...new Set((links ?? []).map(x=>x.school_id))];
   if (!isAdmin && !(links ?? []).some(x=>['SCHOOL_ADMIN','COACH'].includes(x.role))) redirect('/dashboard');
 
-  const [{data:schools},{data:seasons},{data:teams},{data:competitions},{data:venues},{data:fixtures},{data:matches},{data:innings}] = await Promise.all([
+  const [{data:schools},{data:seasons},{data:teams},{data:competitions},{data:venues},{data:fixtures},{data:innings}] = await Promise.all([
     supabase.from('jcm_schools').select('id,name').order('name'),
     supabase.from('jcm_seasons').select('id,school_id,name,year,status').order('year',{ascending:false}),
     supabase.from('jcm_teams').select('id,school_id,season_id,name,age_group,status').order('name'),
     supabase.from('jcm_competitions').select('id,name,season_id,competition_type,status').order('name'),
     supabase.from('jcm_venues').select('id,name,school_id').eq('active',true).order('name'),
     supabase.from('jcm_fixtures').select('id,season_id,competition_id,venue_id,home_team_id,away_team_id,scheduled_at,fixture_type,status,availability_deadline,notes').order('scheduled_at',{ascending:false}),
-    supabase.from('jcm_matches').select('id,fixture_id,team_a_id,team_b_id,age_group,ruleset,venue_id,competition_id,status,scheduled_at,toss_winner_team_id,toss_decision,result_winner_team_id,result_reason,result_margin,scorer_user_id').order('scheduled_at',{ascending:false}),
-    supabase.from('jcm_innings').select('match_id,innings_no,batting_team_id,runs,wickets,legal_balls,completed').order('innings_no')
+     supabase.from('jcm_innings').select('match_id,innings_no,batting_team_id,runs,wickets,legal_balls,completed').order('innings_no')
   ]);
+
+  const { data:matches,error:matchesError } = await supabase.rpc('jcm_operations_match_feed');
+  if (matchesError) throw new Error(matchesError.message);
 
   const assignedUserIds = [...new Set((matches ?? []).map(m=>m.scorer_user_id).filter(Boolean))] as string[];
   const { data:assignedUsers } = assignedUserIds.length
@@ -41,8 +43,7 @@ export default async function OperationsPage() {
   const visibleSeasons = (seasons ?? []).filter(s=>isAdmin||schoolIds.includes(s.school_id));
   const visibleVenues = (venues ?? []).filter(v=>isAdmin||v.school_id===null||schoolIds.includes(v.school_id));
   const visibleFixtures = (fixtures ?? []).filter(f=>isAdmin||visibleTeamIds.has(f.home_team_id)||visibleTeamIds.has(f.away_team_id));
-  const visibleMatches = (matches ?? []).filter(m=>isAdmin||visibleTeamIds.has(m.team_a_id)||visibleTeamIds.has(m.team_b_id));
-  const matchRows=(visibleMatches??[]) as MatchRow[];
+  const matchRows=(matches??[]) as MatchRow[];
   const fixtureRows=(visibleFixtures??[]) as FixtureRow[];
   const inningsRows=(innings??[]) as InningsRow[];
   const teamName=(id:string|null)=>id ? teams?.find(t=>t.id===id)?.name ?? 'Unknown team' : 'Unknown team';
@@ -84,7 +85,7 @@ export default async function OperationsPage() {
               const matchLabel=m.result_reason ? 'Result: '+m.result_reason+(m.result_margin!=null?' · '+m.result_margin:'') : 'Match preparation';
               const score=scoreForMatch(m);
               const assigned=m.scorer_user_id ? assignedUserById.get(m.scorer_user_id) : null;
-              return <tr key={m.id}><td><strong>{teamName(m.team_a_id)} vs {teamName(m.team_b_id)}</strong><small>{league}</small><small>📍 {venue}</small><small>{matchLabel}</small></td><td>{m.age_group}</td><td>{m.ruleset}</td><td><span className="status">{m.status}</span></td><td>{score ? <strong>{score}</strong> : <span style={{color:'var(--muted)'}}>—</span>}</td><td>{assigned ? <><strong>{assigned.full_name||assigned.email}</strong><small>Scorer / assigned user</small></> : <span style={{color:'var(--muted)'}}>Unassigned</span>}</td><td>{m.scheduled_at?new Date(m.scheduled_at).toLocaleString('en-ZA'):'—'}</td><td style={{display:'flex',gap:6,flexWrap:'wrap'}}><a className="secondary-button" href={'/operations/matches/'+m.id}>{ready?'Open preparation':'Prepare'}</a>{ready&&<a className="button" href={'/scoring/'+m.id}>Live scoring</a>}</td></tr>;
+              return <tr key={m.id}><td><strong>{m.team_a_name} vs {m.team_b_name}</strong><small>{league}</small><small>📍 {venue}</small><small>{matchLabel}</small></td><td>{m.age_group}</td><td>{m.ruleset}</td><td><span className="status">{m.status}</span></td><td>{score ? <strong>{score}</strong> : <span style={{color:'var(--muted)'}}>—</span>}</td><td>{assigned ? <><strong>{assigned.full_name||assigned.email}</strong><small>Scorer / assigned user</small></> : <span style={{color:'var(--muted)'}}>Unassigned</span>}</td><td>{m.scheduled_at?new Date(m.scheduled_at).toLocaleString('en-ZA'):'—'}</td><td style={{display:'flex',gap:6,flexWrap:'wrap'}}><a className="secondary-button" href={'/operations/matches/'+m.id}>{ready?'Open preparation':'Prepare'}</a>{ready&&<a className="button" href={'/scoring/'+m.id}>Live scoring</a>}</td></tr>;
             })}
           </tbody></table></div>}
         </section>
