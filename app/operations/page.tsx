@@ -7,10 +7,13 @@ export const dynamic = 'force-dynamic';
 
 type MatchRow = {
   id: string;
+  fixture_id: string | null;
   team_a_id: string;
   team_b_id: string;
   age_group: string;
   ruleset: string;
+  venue_id: string | null;
+  competition_id: string | null;
   status: string;
   scheduled_at: string | null;
   toss_winner_team_id: string | null;
@@ -18,6 +21,13 @@ type MatchRow = {
   result_winner_team_id: string | null;
   result_reason: string | null;
   result_margin: number | null;
+};
+
+type FixtureRow = {
+  id: string;
+  competition_id: string | null;
+  venue_id: string | null;
+  notes: string | null;
 };
 
 export default async function OperationsPage() {
@@ -56,12 +66,15 @@ export default async function OperationsPage() {
     supabase.from('jcm_teams').select('id,school_id,season_id,name,age_group,status').order('name'),
     supabase.from('jcm_competitions').select('id,name,season_id,competition_type,status').order('name'),
     supabase.from('jcm_venues').select('id,name,school_id').eq('active', true).order('name'),
-    supabase.from('jcm_fixtures').select('id,season_id,competition_id,home_team_id,away_team_id,scheduled_at,fixture_type,status,availability_deadline').order('scheduled_at', { ascending: false }),
-    supabase.from('jcm_matches').select('id,team_a_id,team_b_id,age_group,ruleset,status,scheduled_at,toss_winner_team_id,toss_decision,result_winner_team_id,result_reason,result_margin').order('scheduled_at', { ascending: false }),
+    supabase.from('jcm_fixtures').select('id,season_id,competition_id,venue_id,home_team_id,away_team_id,scheduled_at,fixture_type,status,availability_deadline,notes').order('scheduled_at', { ascending: false }),
+    supabase.from('jcm_matches').select('id,fixture_id,team_a_id,team_b_id,age_group,ruleset,venue_id,competition_id,status,scheduled_at,toss_winner_team_id,toss_decision,result_winner_team_id,result_reason,result_margin').order('scheduled_at', { ascending: false }),
   ]);
 
   const matchRows = (matches ?? []) as MatchRow[];
+  const fixtureRows = (fixtures ?? []) as FixtureRow[];
   const teamName = (id: string) => teams?.find(t => t.id === id)?.name ?? 'Unknown team';
+  const competitionName = (id: string | null) => competitions?.find(c => c.id === id)?.name ?? null;
+  const venueName = (id: string | null) => venues?.find(v => v.id === id)?.name ?? null;
 
   return (
     <div className="shell">
@@ -118,6 +131,10 @@ export default async function OperationsPage() {
                   <tbody>
                     {matchRows.map(m => {
                       const ready = Boolean(m.toss_winner_team_id && m.toss_decision);
+                      const fixture = fixtureRows.find(f => f.id === m.fixture_id);
+                      const competition = competitionName(m.competition_id) ?? competitionName(fixture?.competition_id ?? null);
+                      const league = competition ?? fixture?.notes ?? 'Competition not specified';
+                      const venue = venueName(m.venue_id) ?? venueName(fixture?.venue_id ?? null) ?? 'Venue not specified';
                       const matchLabel = m.result_reason
                         ? `Result: ${m.result_reason}${m.result_margin != null ? ` · ${m.result_margin}` : ''}`
                         : 'Match preparation';
@@ -125,6 +142,8 @@ export default async function OperationsPage() {
                         <tr key={m.id}>
                           <td>
                             <strong>{teamName(m.team_a_id)} vs {teamName(m.team_b_id)}</strong>
+                            <small>{league}</small>
+                            <small>📍 {venue}</small>
                             <small>{matchLabel}</small>
                           </td>
                           <td>{m.age_group}</td>
