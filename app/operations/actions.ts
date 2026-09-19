@@ -144,13 +144,6 @@ export async function saveToss(formData: FormData) {
     return { ok: false, message: 'Please select a toss winner and a valid decision.' };
   }
 
-  const { data: canScore, error: authError } = await supabase.rpc('jcm_can_score_match', {
-    p_match_id: matchId,
-  });
-  if (authError || !canScore) {
-    return { ok: false, message: authError?.message ?? 'You are not authorised to manage this match.' };
-  }
-
   const { error: saveError } = await supabase.rpc('jcm_save_match_toss', {
     p_match_id: matchId,
     p_toss_winner_team_id: tossWinner,
