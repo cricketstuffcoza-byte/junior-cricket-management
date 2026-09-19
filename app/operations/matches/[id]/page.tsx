@@ -16,19 +16,17 @@ export default async function MatchPreparation({params}:{params:Promise<{id:stri
  const {data:prep,error:prepError}=await supabase.rpc('jcm_get_match_preparation',{p_match_id:id});
  if(prepError||!prep?.match)redirect('/operations');
 
- const m=prep.match as {
-  id:string;fixture_id:string|null;team_a_id:string;team_b_id:string;age_group:string;ruleset:string;
-  scheduled_at:string|null;status:string;toss_winner_team_id:string|null;toss_decision:string|null;competition_id:string|null
- };
+ const m=prep.match as {id:string;fixture_id:string|null;team_a_id:string;team_b_id:string;age_group:string;ruleset:string;scheduled_at:string|null;status:string;toss_winner_team_id:string|null;toss_decision:string|null;competition_id:string|null};
  const a=prep.home as {id:string;name:string;age_group:string}|null;
  const b=prep.away as {id:string;name:string;age_group:string}|null;
  if(!a||!b)redirect('/operations');
 
  const matchPlayers=(prep.selections??[]) as {player_id:string;team_id:string;selected:boolean}[];
- const [{data:competitions},{data:homePlayers},{data:awayPlayers},{data:availability}]=await Promise.all([
+ const homePlayers=(prep.home_players??[]) as any[];
+ const awayPlayers=(prep.away_players??[]) as any[];
+
+ const [{data:competitions},{data:availability}]=await Promise.all([
   supabase.from('jcm_competitions').select('id,name,season_id,competition_type,status').order('name'),
-  supabase.from('jcm_team_players').select('player_id,team_id,status,jcm_players(id,first_name,surname)').eq('team_id',m.team_a_id).eq('status','ACTIVE'),
-  supabase.from('jcm_team_players').select('player_id,team_id,status,jcm_players(id,first_name,surname)').eq('team_id',m.team_b_id).eq('status','ACTIVE'),
   m.fixture_id?supabase.from('jcm_fixture_availability').select('player_id,status,note').eq('fixture_id',m.fixture_id):Promise.resolve({data:[]})
  ]);
 
@@ -50,7 +48,7 @@ export default async function MatchPreparation({params}:{params:Promise<{id:stri
     <div className="card"><div className="stat-label">Status</div><div className="stat" style={{fontSize:22}}>{m.status}</div><span className="pill">{tossComplete?'Toss complete':'Toss required'}</span></div>
    </div>
    <MatchCompetitionClient matchId={m.id} currentCompetitionId={m.competition_id} competitions={competitions??[]}/>
-   <MatchSquadClient matchId={m.id} home={a} away={b} homePlayers={homePlayers??[]} awayPlayers={awayPlayers??[]} availability={availability??[]} selections={matchPlayers}/>
+   <MatchSquadClient matchId={m.id} home={a} away={b} homePlayers={homePlayers} awayPlayers={awayPlayers} availability={availability??[]} selections={matchPlayers}/>
    <TossClient match={m} home={a} away={b} squadCounts={{home:homeCount,away:awayCount}}/>
    {tossComplete&&<section className="card section"><div className="section-title">Scoring</div><p className="form-help">The toss is recorded and the match is now live. Open live scoring to choose the opening players and start the innings.</p><a className="button" style={{display:'block',textAlign:'center'}} href={'/scoring/'+id}>Go to live scoring</a></section>}
   </main>
