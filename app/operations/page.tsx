@@ -21,15 +21,18 @@ export default async function OperationsPage() {
   const schoolIds = [...new Set((links ?? []).map(x=>x.school_id))];
   if (!isAdmin && !(links ?? []).some(x=>['SCHOOL_ADMIN','COACH'].includes(x.role))) redirect('/dashboard');
 
-  const [{data:schools},{data:seasons},{data:teams},{data:competitions},{data:venues},{data:fixtures},{data:innings}] = await Promise.all([
+  const [{data:schools},{data:seasons,error:seasonsError},{data:teams,error:teamsError},{data:competitions},{data:venues},{data:fixtures},{data:innings}] = await Promise.all([
     supabase.from('jcm_schools').select('id,name').order('name'),
-    supabase.from('jcm_seasons').select('id,school_id,name,year,status').order('year',{ascending:false}),
-    supabase.from('jcm_teams').select('id,school_id,season_id,name,age_group,status').order('name'),
+    supabase.rpc('jcm_operations_season_options'),
+    supabase.rpc('jcm_operations_team_options'),
     supabase.from('jcm_competitions').select('id,name,season_id,competition_type,status').order('name'),
     supabase.from('jcm_venues').select('id,name,school_id').eq('active',true).order('name'),
     supabase.from('jcm_fixtures').select('id,season_id,competition_id,venue_id,home_team_id,away_team_id,scheduled_at,fixture_type,status,availability_deadline,notes').order('scheduled_at',{ascending:false}),
      supabase.from('jcm_innings').select('id,match_id,innings_no,batting_team_id,runs,wickets,legal_balls,completed').order('innings_no')
   ]);
+
+  if (seasonsError) throw new Error(seasonsError.message);
+  if (teamsError) throw new Error(teamsError.message);
 
   const { data:matches,error:matchesError } = await supabase.rpc('jcm_operations_match_feed');
   if (matchesError) throw new Error(matchesError.message);
