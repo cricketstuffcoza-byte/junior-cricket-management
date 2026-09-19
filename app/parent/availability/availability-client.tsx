@@ -2,7 +2,7 @@
 import {useState,useTransition} from 'react';
 import {respondAvailability} from './actions';
 type Item={
-  fixture_id:string; scheduled_at:string; fixture_type:string; home_team_name:string; away_team_name:string;
+  fixture_id:string; match_id:string|null; scheduled_at:string; fixture_type:string; home_team_name:string; away_team_name:string;
   player_id:string; player_name:string; status:string; note:string|null; availability_deadline:string|null;
   season_id:string|null; season_name:string|null; season_year:number|null; competition_id:string|null;
   competition_name:string|null; venue_id:string|null; venue_name:string|null; fixture_status:string;
@@ -24,7 +24,7 @@ export function AvailabilityClient({items}:{items:Item[]}){
         <div><strong>Scheduled:</strong> {new Date(x.scheduled_at).toLocaleString('en-ZA')}</div>
         <div><strong>Availability deadline:</strong> {x.availability_deadline?new Date(x.availability_deadline).toLocaleString('en-ZA'):'Not set'}</div>
       </div>
-      <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:12}}>
+      <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:12}}>{x.match_id&&<a className="secondary-button" href={'/live/'+x.match_id}>Follow live score</a>}
         <button className="button" style={{width:'auto',marginTop:0}} disabled={pending} onClick={()=>start(async()=>{
           const fd=new FormData();fd.set('fixture_id',x.fixture_id);fd.set('player_id',x.player_id);fd.set('status','AVAILABLE');fd.set('note',x.note??'');
           const r=await respondAvailability(fd);setMsg(r.message)
