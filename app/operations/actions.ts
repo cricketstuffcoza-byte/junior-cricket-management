@@ -159,30 +159,12 @@ export async function saveToss(formData: FormData) {
     return { ok: false, message: `Both teams need 6–14 selected players. Current squads: ${squadValidation?.team_a_count ?? 0} and ${squadValidation?.team_b_count ?? 0}.` };
   }
 
-  const { data: match, error: matchError } = await supabase
-    .from('jcm_matches')
-    .select('id,team_a_id,team_b_id,status')
-    .eq('id', matchId)
-    .single();
-  if (matchError || !match) return { ok: false, message: matchError?.message ?? 'Match not found.' };
-
-  if (![match.team_a_id, match.team_b_id].includes(tossWinner)) {
-    return { ok: false, message: 'Toss winner must be one of the teams in this match.' };
-  }
-
-  if (!['READY', 'SCHEDULED'].includes(match.status)) {
-    return { ok: false, message: `Toss cannot be changed while the match is ${match.status}.` };
-  }
-
-  const { error: updateError } = await supabase
-    .from('jcm_matches')
-    .update({
-      toss_winner_team_id: tossWinner,
-      toss_decision: tossDecision,
-      status: 'READY',
-    })
-    .eq('id', matchId);
-  if (updateError) return { ok: false, message: updateError.message };
+  const { error: saveError } = await supabase.rpc('jcm_save_match_toss', {
+    p_match_id: matchId,
+    p_toss_winner_team_id: tossWinner,
+    p_toss_decision: tossDecision,
+  });
+  if (saveError) return { ok: false, message: saveError.message };
 
   revalidatePath(`/operations/matches/${matchId}`);
   revalidatePath('/operations');
