@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { SignOutButton } from '../dashboard/sign-out-button';
 import { OperationsClient } from './operations-client';
+import { MatchScorerAssignment } from '../components/match-scorer-assignment';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,26 @@ export default async function OperationsPage() {
   const { data:assignedUsers } = assignedUserIds.length
     ? await supabase.from('jcm_users').select('user_id,full_name,email').in('user_id',assignedUserIds)
     : { data: [] };
-  const assignedUserById = new Map((assignedUsers ?? []).map(u=>[u.user_id,u]));
+
+  let assignableUsers: {user_id:string;full_name:string|null;email:string|null}[] = [];
+  if (isAdmin) {
+    const { data:roleUsers } = await supabase.from('jcm_user_roles').select('user_id').in('role',['COACH','SCORER']).eq('active',true);
+    const ids = [...new Set((roleUsers??[]).map(x=>x.user_id))];
+    if (ids.length) {
+      const { data:users } = await supabase.from('jcm_users').select('user_id,full_name,email').in('user_id',ids);
+      assignableUsers = (users??[]) as typeof assignableUsers;
+    }
+  } else if (schoolIds.length) {
+    const { data:schoolUsers } = await supabase.from('jcm_school_users').select('user_id').in('school_id',schoolIds).in('role',['COACH','SCORER']).eq('active',true);
+    const ids = [...new Set((schoolUsers??[]).map(x=>x.user_id))];
+    if (ids.length) {
+      const { data:users } = await supabase.from('jcm_users').select('user_id,full_name,email').in('user_id',ids);
+      assignableUsers = (users??[]) as typeof assignableUsers;
+    }
+  }
+  const assignmentUsers = new Map<string,{user_id:string;full_name:string|null;email:string|null}>();
+  for (const u of [...(assignedUsers??[]), ...assignableUsers]) assignmentUsers.set(u.user_id,u);
+  const assignmentUserList = [...assignmentUsers.values()];
   const visibleTeamIds = new Set((teams ?? []).filter(t=>isAdmin||schoolIds.includes(t.school_id)).map(t=>t.id));
   const visibleTeams = (teams ?? []).filter(t=>isAdmin||schoolIds.includes(t.school_id));
   const visibleSeasons = (seasons ?? []).filter(s=>isAdmin||schoolIds.includes(s.school_id));
@@ -68,7 +88,7 @@ export default async function OperationsPage() {
     if(m.status==='LIVE'||m.status==='PAUSED'){
       const current=[...rows].reverse().find(i=>!i.completed) ?? rows[rows.length-1];
       const previous=rows.filter(i=>i.id!==current.id);
-      const currentText=current?.batting_team_id ? 'Current: '+teamName(current.batting_team_id)+' '+scoreText(current) : 'Current score: 0/0';
+      const currentText=current?.batting_team_id ? teamName(current.batting_team_id)+' '+scoreText(current) : '0/0';
       return previous.length ? previous.map(i=>teamName(i.batting_team_id)+' '+scoreText(i)).join(' · ')+' · '+currentText : currentText;
     }
     if(m.status==='COMPLETED'||m.status==='FINALISED') return scores.join(' · ');
