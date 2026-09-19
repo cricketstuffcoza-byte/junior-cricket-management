@@ -74,7 +74,7 @@ export default async function OperationsPage() {
   const matchRows=rawMatches;
   const fixtureRows=(visibleFixtures??[]) as FixtureRow[];
   const inningsRows=(innings??[]) as InningsRow[];
-  const teamName=(id:string|null)=>id ? teams?.find(t=>t.id===id)?.name ?? 'Unknown team' : 'Unknown team';
+  const teamName=(id:string|null)=>id ? (teams as Array<{id:string;name:string}> | null | undefined)?.find((t:{id:string;name:string})=>t.id===id)?.name ?? 'Unknown team' : 'Unknown team';
   const competitionName=(id:string|null)=>competitions?.find(c=>c.id===id)?.name ?? null;
   const venueName=(id:string|null)=>venues?.find(v=>v.id===id)?.name ?? null;
   const scoreText=(i:InningsRow)=>{
