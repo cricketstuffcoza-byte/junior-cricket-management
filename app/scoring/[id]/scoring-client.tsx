@@ -22,7 +22,7 @@ export function ScoringClient(props:{match:Match;initialState:State;initialInnin
    : '';
  const firstInnings=innings.find(i=>i.innings_no===1);
  const isChasing=current.innings_no===2&&current.target!=null;
- const chaseRunsNeeded=isChasing?Math.max(0,current.target-(current.runs??0)):0;
+ const chaseRunsNeeded=isChasing?Math.max(0,(current.target??0)-(current.runs??0)):0;
  const chaseBallsLimit=isChasing?(firstInnings?.legal_balls??0):0;
  const chaseBallsLeft=isChasing?Math.max(0,chaseBallsLimit-(current.legal_balls??0)):0;
  const chaseRate=chaseBallsLeft>0?chaseRunsNeeded/chaseBallsLeft:null;
