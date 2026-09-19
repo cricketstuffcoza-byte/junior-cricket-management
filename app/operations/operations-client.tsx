@@ -3,7 +3,7 @@ import { useRef, useState, useTransition, type ReactNode } from 'react';
 import { addCompetitionTeam, createCompetition, createFixture, publishFixture } from './actions';
 
 type School={id:string;name:string};
-type Season={id:string;school_id:string;name:string;year:number;status:string};
+type Season={id:string;name:string;year:number;status:string};
 type Team={id:string;school_id:string;season_id:string;name:string;age_group:string;status:string};
 type Competition={id:string;name:string;season_id:string|null;competition_type:string;status:string};
 type Venue={id:string;name:string;school_id:string|null};
@@ -59,7 +59,7 @@ export function OperationsClient({
           <p className="form-help">Competitions, leagues and inter-school structures are controlled by System Admin.</p>
           <Form action={createCompetition} label="Create competition">
             <div className="field"><label>Name</label><input name="name" placeholder="Junior Cricket League 2026" required /></div>
-            <div className="field"><label>Season</label><select name="season_id" required><option value="">Select season…</option>{seasons.map(s=><option key={s.id} value={s.id}>{schoolName(s.school_id)} — {s.name} {s.year}</option>)}</select></div>
+            <div className="field"><label>Season</label><select name="season_id" required><option value="">Select season…</option>{seasons.map(s=><option key={s.id} value={s.id}>{s.name} {s.year}</option>)}</select></div>
             <div className="field"><label>Type</label><select name="competition_type" defaultValue="LEAGUE"><option value="LEAGUE">League</option><option value="TOURNAMENT">Tournament</option><option value="FRIENDLY_SERIES">Friendly series</option><option value="OTHER">Other</option></select></div>
           </Form>
         </section>
@@ -78,7 +78,7 @@ export function OperationsClient({
         <div className="section-title">{isSystemAdmin?'Create fixture':'Create school match'}</div>
         <p className="form-help">{isSystemAdmin?'Create as draft, verify the schedule, then publish.':'School Admin can create internal matches only: one of your school teams against another team from the same school. Inter-school and competition fixtures are managed by System Admin.'}</p>
         <Form action={createFixture} label={isSystemAdmin?'Create draft fixture':'Create draft school match'}>
-          <div className="field"><label>Season</label><select name="season_id" required><option value="">Select season…</option>{seasons.filter(s=>isSystemAdmin||schoolIds.includes(s.school_id)).map(s=><option key={s.id} value={s.id}>{schoolName(s.school_id)} — {s.name} {s.year}</option>)}</select></div>
+          <div className="field"><label>Season</label><select name="season_id" required><option value="">Select season…</option>{seasons.map(s=><option key={s.id} value={s.id}>{schoolName(s.school_id)} — {s.name} {s.year}</option>)}</select></div>
           <div className="field"><label>Fixture type</label><select name="fixture_type" defaultValue={isSystemAdmin?'FRIENDLY':'INTERNAL'}>{isSystemAdmin?<><option value="INTERNAL">Internal school</option><option value="INTER_SCHOOL">Inter-school</option><option value="COMPETITION">Competition</option><option value="FRIENDLY">Friendly</option><option value="TOURNAMENT">Tournament</option></>:<option value="INTERNAL">Internal school</option>}</select></div>
           <div className="field"><label>Home team</label><select name="home_team_id" required><option value="">Select home team…</option>{teams.filter(t=>t.status!=='RETIRED'&&(isSystemAdmin||schoolIds.includes(t.school_id))).map(t=><option key={t.id} value={t.id}>{t.name} · {t.age_group} · {schoolName(t.school_id)}</option>)}</select></div>
           <div className="field"><label>Away team</label><select name="away_team_id" required><option value="">Select away team…</option>{teams.filter(t=>t.status!=='RETIRED'&&(isSystemAdmin||schoolIds.includes(t.school_id))).map(t=><option key={t.id} value={t.id}>{t.name} · {t.age_group} · {schoolName(t.school_id)}</option>)}</select></div>
