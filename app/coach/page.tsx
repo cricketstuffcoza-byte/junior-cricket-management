@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { SignOutButton } from '../dashboard/sign-out-button';
+import { MobileNav } from '../mobile-nav';
 
 export const dynamic='force-dynamic';
 
@@ -39,7 +40,7 @@ export default async function CoachPortalPage(){
   return <div className="shell">
     <header className="topbar">
       <div className="brand"><div className="brand-mark">J</div><div>Junior Cricket Management<small>Coach Portal</small></div></div>
-      <div style={{display:'flex',alignItems:'center',gap:14}}><span className="pill">COACH</span><span style={{fontSize:13,color:'var(--muted)'}}>{user.email}</span><SignOutButton/></div>
+      <div style={{display:'flex',alignItems:'center',gap:10}}><MobileNav isSystemAdmin={isAdmin} isCoach={true} active="coach"/><span className="pill">COACH</span><span style={{fontSize:13,color:'var(--muted)'}}>{user.email}</span><SignOutButton/></div>
     </header>
     <div className="layout">
       <aside className="sidebar"><div className="nav-label">Coach</div><a className="nav-item active" href="/coach">My Matches</a><a className="nav-item" href="/dashboard">Dashboard</a></aside>
