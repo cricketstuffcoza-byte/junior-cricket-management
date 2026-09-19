@@ -151,14 +151,6 @@ export async function saveToss(formData: FormData) {
     return { ok: false, message: authError?.message ?? 'You are not authorised to manage this match.' };
   }
 
-  const { data: squadValidation, error: squadError } = await supabase.rpc('jcm_validate_match_squads', {
-    p_match_id: matchId,
-  });
-  if (squadError) return { ok: false, message: squadError.message };
-  if (!squadValidation?.valid) {
-    return { ok: false, message: `Both teams need 6–14 selected players. Current squads: ${squadValidation?.team_a_count ?? 0} and ${squadValidation?.team_b_count ?? 0}.` };
-  }
-
   const { error: saveError } = await supabase.rpc('jcm_save_match_toss', {
     p_match_id: matchId,
     p_toss_winner_team_id: tossWinner,
