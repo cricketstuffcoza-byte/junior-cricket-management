@@ -188,3 +188,24 @@ export async function saveToss(formData: FormData) {
   revalidatePath('/operations');
   return { ok: true, message: 'Toss saved. Match is ready for scoring.' };
 }
+
+export async function assignMatchScorer(formData: FormData) {
+  const { supabase } = await userClient();
+  const matchId = String(formData.get('match_id') ?? '');
+  const scorerValue = String(formData.get('scorer_user_id') ?? '');
+  const scorerUserId = scorerValue || null;
+  if (!matchId) return { ok:false, message:'Match is required.' };
+
+  const { error } = await supabase.rpc('jcm_assign_match_scorer', {
+    p_match_id: matchId,
+    p_scorer_user_id: scorerUserId,
+  });
+  if (error) return { ok:false, message:error.message };
+
+  revalidatePath('/operations');
+  revalidatePath('/school');
+  revalidatePath(`/operations/matches/${matchId}`);
+  revalidatePath('/coach');
+  revalidatePath('/parent/availability');
+  return { ok:true, message:scorerUserId ? 'Coach / scorer assigned.' : 'Match assignment cleared.' };
+}
