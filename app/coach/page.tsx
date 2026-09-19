@@ -31,6 +31,25 @@ export default async function CoachPortalPage(){
   const {data:matches,error}=await supabase.rpc('jcm_coach_match_feed');
   if(error) throw new Error(error.message);
   const coachMatches=(matches??[]) as CoachMatch[];
+
+  const matchIds=coachMatches.map(m=>m.id);
+  const {data:innings}=matchIds.length
+    ? await supabase.from('jcm_innings').select('id,match_id,innings_no,batting_team_id,runs,wickets,legal_balls,completed').in('match_id',matchIds).order('innings_no')
+    : {data:[]};
+  const inningsRows=(innings??[]) as {id:string;match_id:string;innings_no:number;batting_team_id:string|null;runs:number;wickets:number;legal_balls:number;completed:boolean}[];
+  const teamNames=new Map<string,string>();
+  for(const m of coachMatches){teamNames.set(m.team_a_id,m.team_a_name);teamNames.set(m.team_b_id,m.team_b_name);}
+  const scoreText=(i:typeof inningsRows[number])=>{
+    const legal=i.legal_balls??0;
+    const overs=Math.floor(legal/8);
+    const balls=legal%8;
+    return `${i.runs??0}/${i.wickets??0}${legal>0?` (${overs}.${balls} ov)`:''}`;
+  };
+  const scoreByMatch=new Map<string,string>();
+  for(const m of coachMatches){
+    const rows=inningsRows.filter(i=>i.match_id===m.id).sort((a,b)=>a.innings_no-b.innings_no);
+    if(rows.length) scoreByMatch.set(m.id,rows.map(i=>`${teamNames.get(i.batting_team_id??'')??'Unknown team'} ${scoreText(i)}`).join(' · '));
+  }
   const assignedIds=[...new Set(coachMatches.map(m=>m.scorer_user_id).filter(Boolean))] as string[];
   const {data:assignedUsers}=assignedIds.length
     ? await supabase.from('jcm_users').select('user_id,full_name,email').in('user_id',assignedIds)
@@ -65,7 +84,7 @@ export default async function CoachPortalPage(){
                 <td>{m.age_group}</td>
                 <td>{m.ruleset}</td>
                 <td><span className="status">{m.status}</span>{m.fixture_status&&<small>Fixture: {m.fixture_status}</small>}</td>
-                <td>{m.current_score?<strong>{m.current_score}</strong>:<span style={{color:'var(--muted)'}}>—</span>}</td>
+                <td>{scoreByMatch.get(m.id)||m.current_score?<strong>{scoreByMatch.get(m.id)||m.current_score}</strong>:<span style={{color:'var(--muted)'}}>—</span>}</td>
                 <td>{assigned?<><strong>{assigned.full_name||assigned.email}</strong><small>Scorer / assigned user</small></>:<span style={{color:'var(--muted)'}}>Unassigned</span>}</td>
                 <td>{m.scheduled_at?new Date(m.scheduled_at).toLocaleString('en-ZA'):'—'}</td>
                 <td>{m.venue_name??'Venue not specified'}</td>
