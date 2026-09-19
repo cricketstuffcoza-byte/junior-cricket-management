@@ -28,7 +28,7 @@ export default async function OperationsPage() {
     supabase.from('jcm_competitions').select('id,name,season_id,competition_type,status').order('name'),
     supabase.from('jcm_venues').select('id,name,school_id').eq('active',true).order('name'),
     supabase.from('jcm_fixtures').select('id,season_id,competition_id,venue_id,home_team_id,away_team_id,scheduled_at,fixture_type,status,availability_deadline,notes').order('scheduled_at',{ascending:false}),
-     supabase.from('jcm_innings').select('match_id,innings_no,batting_team_id,runs,wickets,legal_balls,completed').order('innings_no')
+     supabase.from('jcm_innings').select('id,match_id,innings_no,batting_team_id,runs,wickets,legal_balls,completed').order('innings_no')
   ]);
 
   const { data:matches,error:matchesError } = await supabase.rpc('jcm_operations_match_feed');
