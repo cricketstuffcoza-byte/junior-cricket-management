@@ -66,9 +66,9 @@ export default async function OperationsPage() {
   const assignmentUsers = new Map<string,{user_id:string;full_name:string|null;email:string|null}>();
   for (const u of [...(assignedUsers??[]), ...assignableUsers]) assignmentUsers.set(u.user_id,u);
   const assignmentUserList = [...assignmentUsers.values()];
-  const visibleTeamIds = new Set((teams ?? []).filter(t=>isAdmin||schoolIds.includes(t.school_id)).map(t=>t.id));
-  const visibleTeams = (teams ?? []).filter(t=>isAdmin||schoolIds.includes(t.school_id));
-  const visibleSeasons = (seasons ?? []).filter(s=>isAdmin||schoolIds.includes(s.school_id));
+  const visibleTeamIds = new Set((teams ?? []).map((t:{id:string})=>t.id));
+  const visibleTeams = (teams ?? []).map((t:any)=>t);
+  const visibleSeasons = (seasons ?? []).map((s:any)=>s);
   const visibleVenues = (venues ?? []).filter(v=>isAdmin||v.school_id===null||schoolIds.includes(v.school_id));
   const visibleFixtures = (fixtures ?? []).filter(f=>isAdmin||visibleTeamIds.has(f.home_team_id)||visibleTeamIds.has(f.away_team_id));
   const matchRows=rawMatches;
